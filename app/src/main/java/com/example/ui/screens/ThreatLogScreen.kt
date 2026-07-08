@@ -22,6 +22,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -66,6 +68,7 @@ fun ThreatLogScreen(
     onThreatClick: (Int) -> Unit,
     onBackClick: () -> Unit
 ) {
+    val context = LocalContext.current
     val allThreats by viewModel.allThreats.collectAsState()
     var selectedTab by remember { mutableStateOf("All") }
     var showConfirmationDialog by remember { mutableStateOf(false) }
@@ -90,6 +93,13 @@ fun ThreatLogScreen(
                 },
                 actions = {
                     if (allThreats.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.exportThreatLogs(context) }) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Export Log File",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                         IconButton(onClick = { showConfirmationDialog = true }) {
                             Icon(
                                 imageVector = Icons.Default.DeleteSweep,

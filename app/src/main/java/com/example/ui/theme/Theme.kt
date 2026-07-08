@@ -36,15 +36,31 @@ private val LightColorScheme =
     onSurface = androidx.compose.ui.graphics.Color(0xFF1E293B)
   )
 
+private val HighContrastColorScheme =
+  darkColorScheme(
+    primary = androidx.compose.ui.graphics.Color(0xFFFFFF00), // High Contrast Yellow
+    secondary = androidx.compose.ui.graphics.Color(0xFF00FFFF), // High Contrast Cyan
+    tertiary = androidx.compose.ui.graphics.Color.White,
+    background = androidx.compose.ui.graphics.Color.Black,
+    surface = androidx.compose.ui.graphics.Color(0xFF121212),
+    onPrimary = androidx.compose.ui.graphics.Color.Black,
+    onSecondary = androidx.compose.ui.graphics.Color.Black,
+    onBackground = androidx.compose.ui.graphics.Color.White,
+    onSurface = androidx.compose.ui.graphics.Color.White,
+    outline = androidx.compose.ui.graphics.Color.White
+  )
+
 @Composable
 fun MyApplicationTheme(
   darkTheme: Boolean = isSystemInDarkTheme(),
   // Dynamic color is available on Android 12+
   dynamicColor: Boolean = true,
+  isHighContrast: Boolean = false,
   content: @Composable () -> Unit,
 ) {
   val colorScheme =
     when {
+      isHighContrast -> HighContrastColorScheme
       dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
         val context = LocalContext.current
         if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)

@@ -30,17 +30,33 @@ import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Sms
+import androidx.compose.material.icons.filled.ContactPhone
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,10 +78,42 @@ fun HomeScreen(
     viewModel: CyberGuardViewModel,
     onScanAppsClick: () -> Unit,
     onThreatLogClick: () -> Unit,
-    onThreatClick: (Int) -> Unit
+    onThreatClick: (Int) -> Unit,
+    onSettingsClick: () -> Unit
 ) {
     val isEnabled by viewModel.isListenerEnabled.collectAsState()
     val allThreats by viewModel.allThreats.collectAsState()
+
+    val contact1Name by viewModel.contact1Name.collectAsState()
+    val contact1Phone by viewModel.contact1Phone.collectAsState()
+    val contact2Name by viewModel.contact2Name.collectAsState()
+    val contact2Phone by viewModel.contact2Phone.collectAsState()
+    val contact3Name by viewModel.contact3Name.collectAsState()
+    val contact3Phone by viewModel.contact3Phone.collectAsState()
+    val customMessage by viewModel.customMessage.collectAsState()
+
+    var showContactDialog by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    var hasSmsPermission by remember {
+        mutableStateOf(
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.SEND_SMS
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasSmsPermission = isGranted
+        if (isGranted) {
+            Toast.makeText(context, "Direct background SMS dispatch enabled!", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "Permission denied. Falling back to pre-filled SMS composer.", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     // Calculate dynamic stats
     val totalThreatsCount = allThreats.size
@@ -111,18 +159,38 @@ fun HomeScreen(
                         )
                     }
                     
-                    // Demo Simulation Trigger
-                    Button(
-                        onClick = { viewModel.triggerTestNotification() },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.primary
-                        ),
-                        shape = RoundedCornerShape(12.dp)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "Test Threat", style = MaterialTheme.typography.labelSmall)
+                        // Settings Screen Button
+                        IconButton(
+                            onClick = onSettingsClick,
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                                .size(40.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Settings",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        // Demo Simulation Trigger
+                        Button(
+                            onClick = { viewModel.triggerTestNotification() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                contentColor = MaterialTheme.colorScheme.primary
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(text = "Test Threat", style = MaterialTheme.typography.labelSmall)
+                        }
                     }
                 }
             }
@@ -310,6 +378,182 @@ fun HomeScreen(
                 }
             }
 
+            // Family SOS Panic Shield
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Family SOS Panic Shield",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Button(
+                            onClick = onSettingsClick,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.primary
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Setup Contacts",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(text = "Configure", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        shape = RoundedCornerShape(24.dp),
+                        border = androidx.compose.foundation.BorderStroke(
+                            width = 1.dp,
+                            color = CriticalColor.copy(alpha = 0.2f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            // Left part: SOS Action Circle Button
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                                modifier = Modifier.weight(1.2f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(90.dp)
+                                        .clip(CircleShape)
+                                        .background(CriticalColor)
+                                        .clickable { viewModel.triggerPanicSOSDirectly() },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(
+                                            imageVector = Icons.Default.Warning,
+                                            contentDescription = "Trigger SOS",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                        Text(
+                                            text = "PANIC",
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color.White,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Tap to Alert Contacts",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = CriticalColor,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(16.dp))
+
+                            // Right part: Info on Configured Contacts & Auto Send status
+                            Column(
+                                modifier = Modifier.weight(1.8f),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                val activeCount = listOf(contact1Phone, contact2Phone, contact3Phone).count { it.isNotBlank() }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.ContactPhone,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (activeCount > 0) "$activeCount Contacts Active" else "No contacts configured",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (activeCount > 0) SafeGreen else DangerousColor
+                                    )
+                                }
+
+                                if (activeCount > 0) {
+                                    Text(
+                                        text = listOf(
+                                            contact1Name.ifBlank { contact1Phone },
+                                            contact2Name.ifBlank { contact2Phone },
+                                            contact3Name.ifBlank { contact3Phone }
+                                        ).filter { it.isNotBlank() }.joinToString(", "),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(2.dp))
+
+                                // Permission / Sending status
+                                if (hasSmsPermission) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Sms,
+                                            contentDescription = null,
+                                            tint = SafeGreen,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Text(
+                                            text = "Direct background send active",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontSize = 11.sp,
+                                            color = SafeGreen
+                                        )
+                                    }
+                                } else {
+                                    Button(
+                                        onClick = { permissionLauncher.launch(android.Manifest.permission.SEND_SMS) },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                            contentColor = MaterialTheme.colorScheme.primary
+                                        ),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Sms,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "Authorize Auto-Send",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontSize = 10.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             // Recent 5 threats section
             item {
                 Row(
@@ -378,6 +622,120 @@ fun HomeScreen(
                 item { Spacer(modifier = Modifier.height(10.dp)) }
             }
         }
+    }
+
+    if (showContactDialog) {
+        var c1Name by remember { mutableStateOf(contact1Name) }
+        var c1Phone by remember { mutableStateOf(contact1Phone) }
+        var c2Name by remember { mutableStateOf(contact2Name) }
+        var c2Phone by remember { mutableStateOf(contact2Phone) }
+        var c3Name by remember { mutableStateOf(contact3Name) }
+        var c3Phone by remember { mutableStateOf(contact3Phone) }
+        var msgText by remember { mutableStateOf(customMessage) }
+
+        AlertDialog(
+            onDismissRequest = { showContactDialog = false },
+            title = { Text(text = "Family Emergency Contacts", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Configure up to 3 family contacts to receive alert updates when you trigger the Panic Button.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(text = "Contact 1 (Primary)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = c1Name,
+                                onValueChange = { c1Name = it },
+                                label = { Text("Name") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = c1Phone,
+                                onValueChange = { c1Phone = it },
+                                label = { Text("Phone") },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                modifier = Modifier.weight(1.2f)
+                            )
+                        }
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(text = "Contact 2", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = c2Name,
+                                onValueChange = { c2Name = it },
+                                label = { Text("Name") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = c2Phone,
+                                onValueChange = { c2Phone = it },
+                                label = { Text("Phone") },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                modifier = Modifier.weight(1.2f)
+                            )
+                        }
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(text = "Contact 3", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = c3Name,
+                                onValueChange = { c3Name = it },
+                                label = { Text("Name") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = c3Phone,
+                                onValueChange = { c3Phone = it },
+                                label = { Text("Phone") },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                modifier = Modifier.weight(1.2f)
+                            )
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = msgText,
+                        onValueChange = { msgText = it },
+                        label = { Text("Custom Emergency Message") },
+                        placeholder = { Text("e.g. HELP! I need immediate assistance.") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.updateContacts(c1Name, c1Phone, c2Name, c2Phone, c3Name, c3Phone, msgText)
+                        showContactDialog = false
+                    }
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showContactDialog = false }) {
+                    Text("Cancel")
+                }
+            },
+            shape = RoundedCornerShape(24.dp)
+        )
     }
 }
 

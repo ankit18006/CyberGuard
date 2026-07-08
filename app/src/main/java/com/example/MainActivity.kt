@@ -1,6 +1,7 @@
 package com.example
 
 import android.os.Bundle
+import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -32,9 +33,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        handleIntentAction(intent?.action)
 
         setContent {
-            MyApplicationTheme {
+            val isHighContrast by viewModel.isHighContrast.collectAsState()
+            MyApplicationTheme(isHighContrast = isHighContrast) {
                 val navController = rememberNavController()
                 val isOnboardingCompleted by viewModel.isOnboardingCompleted.collectAsState()
 
@@ -92,6 +95,9 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onThreatClick = { threatId ->
                                     navController.navigate("threat_detail/$threatId")
+                                },
+                                onSettingsClick = {
+                                    navController.navigate("settings")
                                 }
                             )
                         }
@@ -136,6 +142,15 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
+
+                        composable("settings") {
+                            com.example.ui.screens.SettingsScreen(
+                                viewModel = viewModel,
+                                onBackClick = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -145,5 +160,17 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         viewModel.checkListenerStatus()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntentAction(intent.action)
+    }
+
+    private fun handleIntentAction(action: String?) {
+        if (action == "com.example.action.PANIC_TRIGGER") {
+            viewModel.triggerPanicSOSDirectly()
+        }
     }
 }

@@ -136,6 +136,7 @@ class CyberGuardListenerService : NotificationListenerService() {
         }
     }
 
+    @android.annotation.SuppressLint("NotificationPermission")
     private fun triggerEmergencyNotification(threat: ThreatAlert, threatId: Int) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         
